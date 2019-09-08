@@ -1,3 +1,4 @@
+#include<bits/stdc++.h>
 #include<iostream>
 #include <sys/wait.h>
 #include <unistd.h>
@@ -5,8 +6,12 @@
 #include <stdio.h>
 #include <string.h>
 #include<fcntl.h>
+#include<dirent.h>
+#include <fstream>
+#include<sys/types.h>
 #define READ_BUFFER 1024
 #define MAXSIZE 1024
+using namespace std;
 
 char *arr[] = {"help","cd","exit"};
 
@@ -14,6 +19,7 @@ int change_dir(char **args);
 int help_1(char **args);
 int exit_1(char **args);
 int pipe_count=0;
+int flag=0;
 
 void initialize()
 {
@@ -34,6 +40,34 @@ void initialize()
 	fputs("\n",fd);
 	fclose(fd);
 }
+//ENVIRONMENT VARIABLE
+int envi(char *l)
+{
+		FILE *fp;
+		fp=fopen("bash1.txt","r");
+		int ch;
+		char s[1024];
+		if(strcmp(l,"$PATH")==0)
+		ch=1;
+		else if(strcmp(l,"$USER")==0)
+		ch=2;
+		else if(strcmp(l,"$HOME")==0)
+		ch=3;
+		else if(strcmp(l,"$USERNAME")==0)
+		ch=4;
+		for(int i=1;i<=4;i++)
+		{
+		fgets(s,100,fp);
+		if(i==ch)
+		{
+		puts(s);
+		cout<<endl;
+		break;
+		}
+		}
+		fclose(fp);
+		return 1;
+}
 
 int change_dir(char **args)
 {
@@ -43,7 +77,7 @@ int change_dir(char **args)
 		{
 			if(chdir(args[1])!=0)
 			printf("error\n");
-			
+			return 1;
 		}
 return 1;
 }
@@ -133,6 +167,11 @@ char** separate_line(char *l)
 		tok=strtok(NULL," \t\r\n\a");
 	}
 	split[++pos]=NULL;
+	if(split[1][0]=='$')
+	{
+	envi(split[1]);
+	flag=1;
+	}
 	return split;
 }
 int exe_pipe(char **arr)
@@ -250,8 +289,27 @@ void add_history(char *l)
 	FILE *fp;
 	fp=fopen("history.txt","a");
 	fputs(l,fp);
+//	fputs("\n",fp);
 	fclose(fp);
 }
+//DISPLAY HISTORY
+void disp_history()
+{
+FILE *fp;
+fp=fopen("history.txt","r");
+char *s=(char*)malloc(sizeof(char)*1024);
+//getline(fp,s);
+while(fgets(s,100,fp)!=NULL)
+{
+	cout<<s<<endl;
+	//getline(fp,s);
+	//fputs(s,fd);
+	
+}
+fclose(fp);
+return;
+}
+
 //MAIN FUNCTION HERE
 int main(int argc,char **argv)
 {
@@ -259,12 +317,15 @@ int main(int argc,char **argv)
 		initialize();
 		do
 		{
+int linel=0;
 			char **arr;
 		   char **split;
 		   char *l;
 			prompt();
 			l=get_line();
 			add_history(l);
+			if(strcmp(l,"history")==0)
+			disp_history();
 			if(pipe_count!=0)
 			{
 				split=piped(l);
@@ -273,6 +334,7 @@ int main(int argc,char **argv)
 		else
 		{
 		arr=separate_line(l);
+		if(flag==0)
 		stat=execute(arr);
 		}
 		}
